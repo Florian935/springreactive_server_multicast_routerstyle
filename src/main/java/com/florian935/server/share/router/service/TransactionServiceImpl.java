@@ -4,6 +4,7 @@ import com.florian935.server.share.router.domain.Transaction;
 import com.florian935.server.share.router.domain.TransactionEvent;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.util.function.Tuple2;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -21,13 +22,16 @@ public class TransactionServiceImpl implements TransactionService {
     public Flux<TransactionEvent> transactionStream() {
         return timerGenerator()
                 .zipWith(transactionGenerator())
-                .map(tuple ->
-                        TransactionEvent.builder()
-                                .tickerNumber(tuple.getT1())
-                                .transaction(tuple.getT2())
-                                .build()
-                )
+                .map(this::buildTransactionEvent)
                 .share();
+    }
+
+    private TransactionEvent buildTransactionEvent(
+            final Tuple2<Long, Transaction> tupleOfZip) {
+        return TransactionEvent.builder()
+                .tickerNumber(tupleOfZip.getT1())
+                .transaction(tupleOfZip.getT2())
+                .build();
     }
 
     private Flux<Long> timerGenerator() {
@@ -55,7 +59,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     private Float generateRandomFloatNumberBetween(int min, int max) {
-        return ((float) Math.random() * (float) Math.random())
-        * (max - min + 1) + 1;
+        final float randomFloatNumber = (float) (Math.random() * (float) Math.random());
+        return randomFloatNumber * (max - min + 1) + 1;
     }
 }
